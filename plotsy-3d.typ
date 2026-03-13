@@ -81,7 +81,7 @@
       stroke: zaxis-stroke
     )
    // content((), [], anchor: "east", padding: 2em)
-    
+
 
     line(
       (xaxis-low,yaxis-low,zaxis-high),
@@ -152,19 +152,19 @@
     ) //y
 
     content((
-      xaxis-low + (xaxis-high - xaxis-low)/2, 
+      xaxis-low + (xaxis-high - xaxis-low)/2,
       yaxis-high + axis-label-offset.at(0) * text.size.pt(),
       zaxis-low
-      ), 
+      ),
       anchor: "north",
       text(size:axis-label-size)[#axis-labels.at(0)]
     )
 
     content((
       xaxis-high + axis-label-offset.at(1) * text.size.pt(),
-      yaxis-low + (yaxis-high - yaxis-low)/2, 
+      yaxis-low + (yaxis-high - yaxis-low)/2,
       zaxis-low
-      ), 
+      ),
       anchor: "north-west",
       text(size:axis-label-size)[#axis-labels.at(1)]
       )
@@ -173,7 +173,7 @@
       xaxis-low - axis-label-offset.at(2) * text.size.pt(),
       yaxis-high,
       zaxis-low + (zaxis-high - zaxis-low)/2
-      ), 
+      ),
       anchor: "east",
       text(size:axis-label-size)[#axis-labels.at(2)]
     )
@@ -181,7 +181,7 @@
 }
 
 #let get-surface-zpoints(
-  func, 
+  func,
   render-step: 1,
   samples: 1,
   xdomain:(0,10),
@@ -229,32 +229,45 @@
   ) = {
     import draw: *
 
-
     let (xaxis-low,xaxis-high) = xdomain
     let (yaxis-low,yaxis-high) = ydomain
     let (zaxis-low,zaxis-high) = zdomain
-
     let step = 1/samples
 
+    let faces = ()
     let i = 0
-    let j = 0 
     for xregion in range(xaxis-low * samples, xaxis-high * samples, step:render-step) {
+      let j = 0
       for yregion in range(yaxis-low * samples, yaxis-high * samples, step: render-step) {
         let x = xregion * step
         let y = yregion * step
         let offset = step * render-step
-        line(
-          (x, y, zpoints.at(i).at(j)),
-          (x, y + offset, zpoints.at(i).at(j+1)),
-          (x + offset, y + offset, zpoints.at(i+1).at(j+1)), 
-          (x + offset, y, zpoints.at(i+1).at(j)), 
-          stroke:0.02em,
-          fill: color-func(x, y, zpoints.at(i).at(j), xaxis-low, xaxis-high, yaxis-low, yaxis-high, zaxis-low,zaxis-high)
-        )
+        let z0 = zpoints.at(i).at(j)
+        let z1 = zpoints.at(i).at(j+1)
+        let z2 = zpoints.at(i+1).at(j+1)
+        let z3 = zpoints.at(i+1).at(j)
+        let zavg = (z0 + z1 + z2 + z3) / 4
+        let depth = -zavg
+        faces.push((
+          depth,
+          (x, y, z0),
+          (x, y + offset, z1),
+          (x + offset, y + offset, z2),
+          (x + offset, y, z3),
+          color-func(x, y, z0, xaxis-low, xaxis-high, yaxis-low, yaxis-high, zaxis-low, zaxis-high)
+        ))
         j += 1
       }
-      j = 0
       i += 1
+    }
+
+    faces = faces.sorted(key: f => f.at(0))
+
+    for face in faces {
+      line(face.at(1), face.at(2), face.at(3), face.at(4),
+        stroke: face.at(5),
+        fill: face.at(5)
+      )
     }
 }
 
@@ -262,13 +275,13 @@
 #let get-parametric-surface-points(
   x-func,
   y-func,
-  z-func, 
+  z-func,
   subdivisions: 10,
   udomain: (0,1),
   vdomain: (0,1),
   ) = {
     import draw: *
-    
+
     let (u-low, u-high) = udomain
     let (v-low, v-high) = vdomain
     let xsurf-lo = 0
@@ -278,7 +291,7 @@
     let ysurf-hi = 0
     let zsurf-hi = 0
     let scale-factor = 1/subdivisions
-    
+
     let surface-points = ()
     for uregion in range(int(u-low * subdivisions), int(u-high * subdivisions)) {
       let surface-points-temp = ()
@@ -319,12 +332,12 @@
 #let get-parametric-curve-points(
   x-func,
   y-func,
-  z-func, 
+  z-func,
   subdivisions: 10,
   tdomain: (0,1),
   ) = {
     import draw: *
-    
+
     let (t-low, t-high) = tdomain
     let xcurve-lo = 0
     let ycurve-lo = 0
@@ -403,10 +416,10 @@
     context[#canvas({
       import draw: *
       let (xscale, yscale, zscale) = scale-dim
-      
+
       set-transform(matrix.transform-rotate-dir(rotation-matrix.at(0),rotation-matrix.at(1)))
       scale(x: xscale*text.size.pt(), y: yscale*text.size.pt(), z: zscale*text.size.pt())
-      
+
 
       let (xaxis-low,xaxis-high) = xdomain
       let (yaxis-low,yaxis-high) = ydomain
@@ -419,24 +432,24 @@
       let (zaxis-low,zaxis-high) = zdomain
 
       render-rear-axis(
-        axis-low: (xaxis-low - xpad-low,yaxis-low - ypad-low, zaxis-low - zpad-low), 
-        axis-high: (xaxis-high + xpad-high,yaxis-high + ypad-high, zaxis-high +zpad-high), 
-        axis-step: axis-step, 
-        dot-thickness: dot-thickness, 
-        axis-dot-scale: rear-axis-dot-scale, 
+        axis-low: (xaxis-low - xpad-low,yaxis-low - ypad-low, zaxis-low - zpad-low),
+        axis-high: (xaxis-high + xpad-high,yaxis-high + ypad-high, zaxis-high +zpad-high),
+        axis-step: axis-step,
+        dot-thickness: dot-thickness,
+        axis-dot-scale: rear-axis-dot-scale,
         axis-text-size: rear-axis-text-size,
         axis-text-offset: axis-text-offset
       )
 
       render-surface(
-        func, 
-        color-func, 
+        func,
+        color-func,
         samples: samples,
-        render-step:render-step, 
+        render-step:render-step,
         xdomain: xdomain,
-        ydomain: ydomain, 
-        zdomain:zdomain, 
-        axis-step:axis-step, 
+        ydomain: ydomain,
+        zdomain:zdomain,
+        axis-step:axis-step,
         zpoints: zpoints,
       )
 
@@ -444,21 +457,21 @@
         let (zdomain, zpoints) = get-surface-zpoints(func, samples: samples,render-step:render-step, xdomain: xdomain, ydomain: ydomain, axis-step:axis-step)
 
         render-surface(
-        func2, 
-        color-func, 
+        func2,
+        color-func,
         samples: samples,
-        render-step:render-step, 
+        render-step:render-step,
         xdomain: xdomain,
-        ydomain: ydomain, 
-        zdomain:zdomain, 
-        axis-step:axis-step, 
+        ydomain: ydomain,
+        zdomain:zdomain,
+        axis-step:axis-step,
         zpoints: zpoints,
       )
 
       }
 
       render-front-axis(
-        axis-low: (xaxis-low - xpad-low,yaxis-low - ypad-low,zaxis-low - zpad-low), 
+        axis-low: (xaxis-low - xpad-low,yaxis-low - ypad-low,zaxis-low - zpad-low),
         axis-high: (xaxis-high + xpad-high,yaxis-high + ypad-high,zaxis-high + zpad-high),
         axis-label-size: axis-label-size,
         front-axis-dot-scale: front-axis-dot-scale,
@@ -477,7 +490,7 @@
 }
 
 #let render-parametric-curve(
-  curve-points:(), 
+  curve-points:(),
   color-func: default-line-color-func
   ) = {
   import draw: *
@@ -516,7 +529,7 @@
       let (xscale, yscale, zscale) = scale-dim
       set-transform(matrix.transform-rotate-dir(rotation-matrix.at(0),rotation-matrix.at(1)))
       scale(x: xscale*text.size.pt(), y: yscale*text.size.pt(), z: zscale*text.size.pt())
-      
+
 
       let (xaxis-low,xaxis-high) = xaxis
       let (yaxis-low,yaxis-high) = yaxis
@@ -526,27 +539,27 @@
       let (curve-points, (xcurve-lo, xcurve-hi), (ycurve-lo, ycurve-hi), (zcurve-lo, zcurve-hi)) = get-parametric-curve-points(
         x-func,
         y-func,
-        z-func, 
+        z-func,
         subdivisions: subdivisions,
         tdomain: tdomain,
       )
 
       render-rear-axis(
-        axis-low: (calc.min(xcurve-lo, xaxis-low),calc.min(ycurve-lo, yaxis-low), calc.min(zcurve-lo, zaxis-low)), 
-        axis-high: (calc.max(xcurve-hi, xaxis-high),calc.max(ycurve-hi, yaxis-high), calc.max(zcurve-hi, zaxis-high)), 
-        axis-step: axis-step, 
-        dot-thickness: dot-thickness, 
-        axis-dot-scale: rear-axis-dot-scale, 
+        axis-low: (calc.min(xcurve-lo, xaxis-low),calc.min(ycurve-lo, yaxis-low), calc.min(zcurve-lo, zaxis-low)),
+        axis-high: (calc.max(xcurve-hi, xaxis-high),calc.max(ycurve-hi, yaxis-high), calc.max(zcurve-hi, zaxis-high)),
+        axis-step: axis-step,
+        dot-thickness: dot-thickness,
+        axis-dot-scale: rear-axis-dot-scale,
         axis-text-size: rear-axis-text-size,
         axis-text-offset: axis-text-offset,
       )
 
       render-parametric-curve(curve-points: curve-points, color-func: color-func)
-      
+
 
       render-front-axis(
-        axis-low: (calc.min(xcurve-lo, xaxis-low),calc.min(ycurve-lo, yaxis-low), calc.min(zcurve-lo, zaxis-low)), 
-        axis-high: (calc.max(xcurve-hi, xaxis-high),calc.max(ycurve-hi, yaxis-high), calc.max(zcurve-hi, zaxis-high)), 
+        axis-low: (calc.min(xcurve-lo, xaxis-low),calc.min(ycurve-lo, yaxis-low), calc.min(zcurve-lo, zaxis-low)),
+        axis-high: (calc.max(xcurve-hi, xaxis-high),calc.max(ycurve-hi, yaxis-high), calc.max(zcurve-hi, zaxis-high)),
         axis-label-size: axis-label-size,
         front-axis-dot-scale: front-axis-dot-scale,
         front-axis-thickness: front-axis-thickness,
@@ -561,10 +574,10 @@
 
 
 #let render-parametric-surface(
-  surface-points:(), 
+  surface-points:(),
   color-func: default-color-func,
-  xdomain: (0,10), 
-  ydomain: (0,10), 
+  xdomain: (0,10),
+  ydomain: (0,10),
   zdomain: (0,10),
   order: 0,
   ) = {
@@ -574,12 +587,12 @@
   if (0 == order) {
       for i in range(surface-points.len() - 1) {
         for j in range(surface-points.at(0).len() - 1) {
-          line(surface-points.at(i).at(j), surface-points.at(i).at(j+1), surface-points.at(i+1).at(j+1), surface-points.at(i+1).at(j), stroke: 0.02em, 
+          line(surface-points.at(i).at(j), surface-points.at(i).at(j+1), surface-points.at(i+1).at(j+1), surface-points.at(i+1).at(j), stroke: 0.02em,
           fill: color-func(
-            surface-points.at(i).at(j).at(0), 
-            surface-points.at(i).at(j).at(1), 
-            surface-points.at(i).at(j).at(2), 
-            xdomain.at(0), xdomain.at(1), 
+            surface-points.at(i).at(j).at(0),
+            surface-points.at(i).at(j).at(1),
+            surface-points.at(i).at(j).at(2),
+            xdomain.at(0), xdomain.at(1),
             ydomain.at(0), ydomain.at(1),
             zdomain.at(0), zdomain.at(1))
           )
@@ -588,12 +601,12 @@
   } else if (1 == order) {
     for j in range(surface-points.at(0).len() - 1) {
       for i in range(surface-points.len() - 1) {
-        line(surface-points.at(i).at(j), surface-points.at(i).at(j+1), surface-points.at(i+1).at(j+1), surface-points.at(i+1).at(j), stroke: 0.02em, 
+        line(surface-points.at(i).at(j), surface-points.at(i).at(j+1), surface-points.at(i+1).at(j+1), surface-points.at(i+1).at(j), stroke: 0.02em,
         fill: color-func(
-          surface-points.at(i).at(j).at(0), 
-          surface-points.at(i).at(j).at(1), 
-          surface-points.at(i).at(j).at(2), 
-          xdomain.at(0), xdomain.at(1), 
+          surface-points.at(i).at(j).at(0),
+          surface-points.at(i).at(j).at(1),
+          surface-points.at(i).at(j).at(2),
+          xdomain.at(0), xdomain.at(1),
           ydomain.at(0), ydomain.at(1),
           zdomain.at(0), zdomain.at(1))
         )
@@ -634,7 +647,7 @@
       let (xscale, yscale, zscale) = scale-dim
       set-transform(matrix.transform-rotate-dir(rotation-matrix.at(0),rotation-matrix.at(1)))
       scale(x: xscale*text.size.pt(), y: yscale*text.size.pt(), z: zscale*text.size.pt())
-      
+
 
       let (xaxis-low,xaxis-high) = xaxis
       let (yaxis-low,yaxis-high) = yaxis
@@ -644,7 +657,7 @@
       let (surface-points, (xsurf-lo, xsurf-hi), (ysurf-lo, ysurf-hi), (zsurf-lo, zsurf-hi)) = get-parametric-surface-points(
         x-func,
         y-func,
-        z-func, 
+        z-func,
         subdivisions: subdivisions,
         udomain: udomain,
         vdomain: vdomain
@@ -655,11 +668,11 @@
       let zdomain = (zsurf-lo, zsurf-hi)
 
       render-rear-axis(
-        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)), 
-        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)), 
-        axis-step: axis-step, 
-        dot-thickness: dot-thickness, 
-        axis-dot-scale: rear-axis-dot-scale, 
+        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)),
+        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)),
+        axis-step: axis-step,
+        dot-thickness: dot-thickness,
+        axis-dot-scale: rear-axis-dot-scale,
         axis-text-size: rear-axis-text-size,
         axis-text-offset: axis-text-offset,
       )
@@ -692,12 +705,12 @@
         for i in range(surface-points.len()) {
           surface-points.at(i) = surface-points.at(i).rev()
         }
-      } 
+      }
       render-parametric-surface(surface-points:surface-points, color-func: color-func, xdomain: xdomain, ydomain: ydomain, zdomain: zdomain, order: order)
 
       render-front-axis(
-        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)), 
-        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)), 
+        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)),
+        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)),
         axis-label-size: axis-label-size,
         front-axis-dot-scale: front-axis-dot-scale,
         front-axis-thickness: front-axis-thickness,
@@ -712,8 +725,8 @@
 
 #let get-vector-field-vectors(
   i-func,
-  j-func, 
-  k-func,  
+  j-func,
+  k-func,
   render-step: 1,
   samples: 1,
   xdomain:(0,10),
@@ -744,7 +757,7 @@
         let end-y = j-func(x,y,z)
         let end-z = k-func(x,y,z)
         vectors.push( (
-          (x, y, z), 
+          (x, y, z),
           ( (end-x - x)*vector-length-scale + x, (end-y - y)*vector-length-scale + y, (end-z - z)*vector-length-scale +z)
           )
         )
@@ -786,10 +799,10 @@
   for i in range(vectors.len()) {
     if (vectors.at(i).at(0) != vectors.at(i).at(1)) {
       line(vectors.at(i).at(0),vectors.at(i).at(1),stroke: (vector-size + color-func(
-            vectors.at(i).at(0).at(0), 
-            vectors.at(i).at(0).at(1), 
-            vectors.at(i).at(0).at(2), 
-            xdomain.at(0), xdomain.at(1), 
+            vectors.at(i).at(0).at(0),
+            vectors.at(i).at(0).at(1),
+            vectors.at(i).at(0).at(2),
+            xdomain.at(0), xdomain.at(1),
             ydomain.at(0), ydomain.at(1),
             zdomain.at(0), zdomain.at(1)
           )), mark: (end: "straight"))
@@ -828,7 +841,7 @@
       let (xscale, yscale, zscale) = scale-dim
       set-transform(matrix.transform-rotate-dir(rotation-matrix.at(0),rotation-matrix.at(1)))
       scale(x: xscale*text.size.pt(), y: yscale*text.size.pt(), z: zscale*text.size.pt())
-      
+
 
       let (xaxis-low,xaxis-high) = xdomain
       let (yaxis-low,yaxis-high) = ydomain
@@ -845,8 +858,8 @@
 
       let (vectors, (xsurf-lo, xsurf-hi), (ysurf-lo, ysurf-hi), (zsurf-lo, zsurf-hi)) = get-vector-field-vectors(
         i-func,
-        j-func, 
-        k-func,  
+        j-func,
+        k-func,
         render-step: render-step,
         samples: samples,
         xdomain:xdomain,
@@ -860,11 +873,11 @@
       let zdomain = (zsurf-lo, zsurf-hi)
 
       render-rear-axis(
-        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)), 
-        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)), 
-        axis-step: axis-step, 
-        dot-thickness: dot-thickness, 
-        axis-dot-scale: rear-axis-dot-scale, 
+        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)),
+        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)),
+        axis-step: axis-step,
+        dot-thickness: dot-thickness,
+        axis-dot-scale: rear-axis-dot-scale,
         axis-text-size: rear-axis-text-size,
         axis-text-offset: axis-text-offset,
       )
@@ -876,11 +889,11 @@
         ydomain: ydomain,
         zdomain: zdomain,
         vector-size: vector-size,
-      ) 
+      )
 
       render-front-axis(
-        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)), 
-        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)), 
+        axis-low: (calc.min(xsurf-lo, xaxis-low),calc.min(ysurf-lo, yaxis-low), calc.min(zsurf-lo, zaxis-low)),
+        axis-high: (calc.max(xsurf-hi, xaxis-high),calc.max(ysurf-hi, yaxis-high), calc.max(zsurf-hi, zaxis-high)),
         axis-label-size: axis-label-size,
         front-axis-dot-scale: front-axis-dot-scale,
         front-axis-thickness: front-axis-thickness,
